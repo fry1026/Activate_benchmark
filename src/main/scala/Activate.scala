@@ -21,21 +21,22 @@ import net.fwbrasil.activate.ActivateContext
 
 
 object persistenceContext extends ActivateContext {
-//  val storage = new TransientMemoryStorage
+  //val storage = new TransientMemoryStorage
   // sync postgresql
-    val storage = new PooledJdbcRelationalStorage {
-      val jdbcDriver = "org.postgresql.Driver"
-      val user = Some("postgres")
-      val password = Some("postgres")
-      val url = "jdbc:postgresql://127.0.0.1/benchmarking2"
-      val dialect = postgresqlDialect
-    }
+  val storage = new PooledJdbcRelationalStorage {
+    val jdbcDriver = "org.postgresql.Driver"
+    val user = Some("postgres")
+    val password = Some("postgres")
+    val url = "jdbc:postgresql://127.0.0.1/benchmarking2"
+    val dialect = postgresqlDialect
+  }
 
 }
 
 import activate.persistenceContext._
 
 object Domain {
+
   class DbObject extends Entity {
     val lastUpdate = new Timestamp(System.currentTimeMillis())
   }
@@ -56,7 +57,7 @@ object Domain {
   case class AwardPresentation(var award: Award, var author: Author) extends DbObject
 
   class MyMigration extends Migration {
-    def timestamp = 2012111
+    def timestamp =  System.currentTimeMillis() //2012111
 
     def up = {
       removeAllEntitiesTables.ifExists
@@ -90,17 +91,17 @@ object ActivateBenchMark extends App {
           new AwardPresentation(commonwealthBookPrize, jrrt) //association is missing
         }
       })
-      transactional {
-        time("select statements", {
-          1 to 100 foreach { n =>
-            val jrrt = select[Author].where(_.lastName :== s"Tolkien$n").head
-            all[Author].size //from(authors)(select(_)).size
-            all[Author].map(_.full_name).mkString(",")
-            all[Book].filter(_.title.contains("Dark")).map(_.title).mkString(",")
-            select[Author].where(_.lastName :== "Pullmann").foreach(a => println(a.full_content))
-          }
-        })
-      }
+    }
+    transactional {
+      println(s"Number of authors in database: ${all[Author].size }")
+      time("select statements", {
+        1 to 100 foreach { n =>
+          val jrrt = select[Author].where(_.lastName :== s"Tolkien$n").head
+          all[Author].map(_.full_name).mkString(",")
+          all[Book].filter(_.title.contains("Dark")).map(_.title).mkString(",")
+          select[Author].where(_.lastName :== "Pullmann").foreach(a => println(a.full_content))
+        }
+      })
     }
   }
 }
